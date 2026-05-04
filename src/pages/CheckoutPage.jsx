@@ -1,16 +1,18 @@
 import { createSignal, Show, For, createMemo } from 'solid-js'
 import { A, useNavigate } from '@solidjs/router'
-import { cartItems, cartTotal, clearCart, removeFromCart, updateQuantity, isAuthenticated, currentUser } from '../stores/index.js'
+import { cartItems, cartTotal, clearCart, removeFromCart, updateQuantity, isAuthenticated, currentUser, createOrder, validateCoupon } from '../stores/index.js'
 import Navbar from '../components/Navbar.jsx'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
-  const [step, setStep] = createSignal(1) // 1=Cart, 2=Shipping, 3=Payment, 4=Confirm
+  const [step, setStep] = createSignal(1)
   const [coupon, setCoupon] = createSignal('')
   const [couponApplied, setCouponApplied] = createSignal(false)
   const [couponError, setCouponError] = createSignal('')
+  const [couponData, setCouponData] = createSignal(null)
   const [paymentMethod, setPaymentMethod] = createSignal('visa')
   const [orderComplete, setOrderComplete] = createSignal(false)
+  const [orderId, setOrderId] = createSignal('')
   const [loading, setLoading] = createSignal(false)
 
   const [form, setForm] = createSignal({
@@ -19,49 +21,146 @@ export default function CheckoutPage() {
     shipping: 'standard'
   })
 
-  const discount = createMemo(() => couponApplied() ? cartTotal() * 0.1 : 0)
+  const discount = createMemo(() => {
+    if (!couponApplied() || !couponData()) return 0
+    return couponData().type === 'percent'
+      ? cartTotal() * (couponData().discount / 100)
+      : couponData().discount
+  })
   const shipping = createMemo(() => form().shipping === 'express' ? 12 : (cartTotal() > 100 ? 0 : 12))
   const tax = createMemo(() => (cartTotal() - discount()) * 0.075)
   const total = createMemo(() => cartTotal() - discount() + shipping() + tax())
 
-  function applyCoupon() {
-    if (!isAuthenticated()) { setCouponError('Kuponi su dostupni samo prijavljenim korisnicima.'); return }
-    if (coupon() === 'AURUM10') { setCouponApplied(true); setCouponError('') }
-    else setCouponError('Nevažeći kupon kod.')
+  async function applyCoupon() {
+    setCouponError('')
+    try {
+      const data = await validateCoupon(coupon())
+      setCouponData(data)
+      setCouponApplied(true)
+    } catch (err) {
+      setCouponError(err.message)
+    }
   }
 
+  const [orderError, setOrderError] = createSignal('')
+
   async function placeOrder() {
+    // Blokira narudžbu ako je košarica prazna
+    if (cartItems().length === 0) {
+      setOrderError('Košarica je prazna — ne možeš naručiti.')
+      return
+    }
+    // Blokira ako nisu ispunjeni podaci za dostavu
+    if (!form().fullName || !form().address || !form().city) {
+      setOrderError('Molimo popuni sve podatke za dostavu.')
+      return
+    }
+
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1500))
-    setOrderComplete(true)
-    clearCart()
+    setOrderError('')
+    try {
+      const id = await createOrder({
+        items: cartItems().map(i => ({
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          sku: i.sku || '',
+        })),
+        total: total(),
+        subtotal: cartTotal(),
+        discount: discount(),
+        shipping: shipping(),
+        tax: tax(),
+        status: 'Processing',
+        paymentMethod: paymentMethod(),
+        coupon: couponApplied() ? coupon() : null,
+        shippingAddress: {
+          fullName: form().fullName,
+          phone:    form().phone,
+          address:  form().address,
+          city:     form().city,
+          postal:   form().postal,
+          country:  form().country,
+        },
+      })
+      setOrderId(id)
+      clearCart()
+      setOrderComplete(true)
+    } catch (err) {
+      setOrderError('Greška pri narudžbi: ' + err.message)
+      console.error(err)
+    }
     setLoading(false)
   }
 
   const steps = ['Košarica', 'Dostava', 'Plaćanje', 'Potvrda']
 
-  if (orderComplete()) {
-    return (
-      <div class="min-h-screen bg-aurum-black flex flex-col">
-        <Navbar />
-        <div class="flex-1 flex items-center justify-center px-4">
-          <div class="text-center page-enter">
-            <div class="w-20 h-20 bg-aurum-gold rounded-full flex items-center justify-center mx-auto mb-6">
-              <span class="text-4xl text-aurum-black">✓</span>
-            </div>
-            <h1 class="font-display text-3xl font-bold text-aurum-gold mb-3">Narudžba potvrđena!</h1>
-            <p class="text-aurum-muted mb-2">Hvala na kupovini. Potvrda je poslana na vaš email.</p>
-            <p class="text-aurum-muted text-sm mb-8">Broj narudžbe: <span class="text-aurum-gold font-bold">#AV-{Math.floor(Math.random()*90000)+10000}</span></p>
-            <A href="/catalog" class="btn-gold px-8 py-3 rounded-lg inline-block">Nastavi kupovinu</A>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div class="min-h-screen bg-aurum-black">
       <Navbar />
+
+      {/* POPUP MODAL — pojavi se nakon narudžbe */}
+      <Show when={orderComplete()}>
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div class="bg-aurum-card border border-aurum-gold rounded-2xl p-8 max-w-md w-full text-center"
+            style="box-shadow: 0 0 60px rgba(240,192,64,0.4); animation: fadeIn 0.3s ease">
+
+            {/* Zlatni checkmark */}
+            <div class="w-20 h-20 bg-aurum-gold rounded-full flex items-center justify-center mx-auto mb-5"
+              style="box-shadow: 0 0 30px rgba(240,192,64,0.6)">
+              <span class="text-4xl text-aurum-black font-bold">✓</span>
+            </div>
+
+            <h2 class="font-display text-2xl font-bold text-aurum-gold mb-1">
+              Narudžba je na putu!
+            </h2>
+            <p class="text-aurum-muted text-sm mb-6">
+              Uspješno smo zaprimili vašu narudžbu. Uskoro ćete primiti potvrdu.
+            </p>
+
+            {/* Detalji */}
+            <div class="bg-aurum-dark rounded-xl p-4 text-left mb-6 space-y-2 border border-aurum-border">
+              <div class="flex justify-between text-sm">
+                <span class="text-aurum-muted">Broj narudžbe</span>
+                <span class="text-aurum-gold font-bold font-mono tracking-wider">
+                  #{orderId().slice(0, 8).toUpperCase()}
+                </span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-aurum-muted">Status</span>
+                <span class="text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full text-xs">
+                  🚚 Processing
+                </span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-aurum-muted">Ime</span>
+                <span class="text-aurum-text">{form().fullName}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-aurum-muted">Grad</span>
+                <span class="text-aurum-text">{form().city}</span>
+              </div>
+              <div class="flex justify-between text-sm pt-2 border-t border-aurum-border">
+                <span class="text-aurum-text font-bold">Ukupno plaćeno</span>
+                <span class="text-aurum-gold font-bold text-base">${total().toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Gumbi */}
+            <div class="flex flex-col gap-3">
+              <A href="/profile"
+                class="w-full btn-gold py-3 rounded-lg text-sm font-bold">
+                📦 Pogledaj narudžbu
+              </A>
+              <A href="/catalog"
+                class="w-full border border-aurum-border text-aurum-muted py-3 rounded-lg text-sm hover:border-aurum-gold hover:text-aurum-gold transition-all">
+                ← Natrag na katalog
+              </A>
+            </div>
+          </div>
+        </div>
+      </Show>
 
       <div class="max-w-6xl mx-auto px-4 py-8 page-enter">
         {/* Steps */}
@@ -276,6 +375,10 @@ export default function CheckoutPage() {
                 <h2 class="font-display text-lg font-bold text-aurum-gold mb-4">Potvrda narudžbe</h2>
                 <div class="space-y-3">
                   <div class="flex justify-between text-sm">
+                    <span class="text-aurum-muted">Ime:</span>
+                    <span class="text-aurum-text">{form().fullName}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
                     <span class="text-aurum-muted">Adresa:</span>
                     <span class="text-aurum-text text-right">{form().address}, {form().city}</span>
                   </div>
@@ -287,14 +390,31 @@ export default function CheckoutPage() {
                     <span class="text-aurum-muted">Plaćanje:</span>
                     <span class="text-aurum-text capitalize">{paymentMethod()}</span>
                   </div>
+                  <div class="flex justify-between text-sm pt-3 border-t border-aurum-border">
+                    <span class="text-aurum-muted font-bold">Ukupno:</span>
+                    <span class="text-aurum-gold font-bold">${total().toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Greška */}
+              <Show when={orderError()}>
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-3 text-red-400 text-xs">
+                  ⚠ {orderError()}
+                </div>
+              </Show>
+
               <div class="flex gap-3">
-                <button onclick={() => setStep(3)} class="flex-1 py-3 border border-aurum-border text-aurum-muted rounded-lg text-sm hover:border-aurum-gold transition-colors">
+                <button onclick={() => setStep(3)}
+                  class="flex-1 py-3 border border-aurum-border text-aurum-muted rounded-lg text-sm hover:border-aurum-gold transition-colors">
                   ← Nazad
                 </button>
-                <button onclick={placeOrder} disabled={loading()} class="flex-1 btn-gold py-3 rounded-lg text-sm">
-                  {loading() ? 'Obrađujem...' : '✓ Naruči'}
+                <button
+                  onclick={placeOrder}
+                  disabled={loading() || cartItems().length === 0}
+                  class="flex-1 btn-gold py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading() ? '⏳ Obrađujem...' : '✓ Potvrdi narudžbu'}
                 </button>
               </div>
             </Show>

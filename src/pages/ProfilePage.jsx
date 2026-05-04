@@ -2,7 +2,8 @@ import { createSignal, Show } from 'solid-js'
 import { useNavigate } from '@solidjs/router'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
-import { currentUser, isAuthenticated, logout } from '../stores/index.js'
+import { currentUser, isAuthenticated, logout, updateProfile, fetchOrders, orders } from '../stores/index.js'
+import { onMount } from 'solid-js'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -15,18 +16,25 @@ export default function ProfilePage() {
     return null
   }
 
+  onMount(() => fetchOrders())
+
   const [form, setForm] = createSignal({
-    name: currentUser()?.name || '',
-    email: currentUser()?.email || '',
-    phone: '+385 91 234 5678',
-    address: 'Ilica 1, Zagreb',
+    name:    currentUser()?.name || '',
+    email:   currentUser()?.email || '',
+    phone:   '',
+    address: '',
   })
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault()
-    setSaved(true)
-    setEditing(false)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      await updateProfile({ name: form().name, address: form().address })
+      setSaved(true)
+      setEditing(false)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('Greška pri ažuriranju:', err)
+    }
   }
 
   const mockOrders = [
@@ -114,22 +122,31 @@ export default function ProfilePage() {
         <Show when={activeTab() === 'orders'}>
           <div class="space-y-4">
             <h2 class="section-title text-base mb-4">Povijest narudžbi</h2>
-            {mockOrders.map(order => (
+            <Show when={orders().length === 0}>
+              <p class="text-aurum-muted text-sm">Nemaš još narudžbi.</p>
+            </Show>
+            <For each={orders()}>{order => (
               <div class="card-dark p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p class="font-bold text-aurum-gold">{order.id}</p>
-                  <p class="text-aurum-muted text-sm">{order.items}</p>
-                  <p class="text-aurum-muted text-xs">{order.date}</p>
+                  <p class="font-bold text-aurum-gold">#{order.id?.slice(0,8).toUpperCase()}</p>
+                  <p class="text-aurum-muted text-sm">
+                    {order.items?.map(i => i.name).join(', ') || 'Artikli'}
+                  </p>
+                  <p class="text-aurum-muted text-xs">
+                    {order.shippingAddress?.city || ''}
+                  </p>
                 </div>
                 <div class="text-right">
-                  <p class="text-aurum-gold font-bold">${order.total.toLocaleString()}</p>
+                  <p class="text-aurum-gold font-bold">${Number(order.total || 0).toFixed(2)}</p>
                   <span class={`text-xs px-2 py-0.5 rounded-full ${
-                    order.status === 'Delivered' ? 'bg-green-900 text-green-400' :
-                    order.status === 'Processing' ? 'bg-yellow-900 text-yellow-400' : 'bg-aurum-dark text-aurum-muted'
-                  }`}>{order.status}</span>
+                    order.status === 'Delivered'   ? 'bg-green-900 text-green-400' :
+                    order.status === 'Processing'  ? 'bg-yellow-900 text-yellow-400' :
+                    order.status === 'Shipped'     ? 'bg-blue-900 text-blue-400' :
+                    'bg-aurum-dark text-aurum-muted'
+                  }`}>{order.status || 'Processing'}</span>
                 </div>
               </div>
-            ))}
+            )}</For>
           </div>
         </Show>
 

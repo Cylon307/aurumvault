@@ -1,4 +1,3 @@
-import './seed.js'
 import { render } from 'solid-js/web'
 import { Router, Route } from '@solidjs/router'
 import './styles/index.css'

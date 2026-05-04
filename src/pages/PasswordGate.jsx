@@ -21,7 +21,7 @@ export default function PasswordGate() {
       setError(true)
     }
     setLoading(false)
-  }AurumVault
+  }
 
   return (
     <div class="min-h-screen bg-aurum-black flex flex-col">

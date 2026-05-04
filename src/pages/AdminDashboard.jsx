@@ -1,6 +1,8 @@
-import { createSignal, Show, For } from 'solid-js'
+import { createSignal, Show, For, onMount } from 'solid-js'
 import { A, useNavigate } from '@solidjs/router'
-import { isAdmin, currentUser, logout, orders, products } from '../stores/index.js'
+import { isAdmin, currentUser, logout, orders, products, fetchOrders } from '../stores/index.js'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../firebase.js'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -8,6 +10,13 @@ export default function AdminDashboard() {
   const [sessionTime] = createSignal('12m 34s')
 
   if (!isAdmin()) { navigate('/login'); return null }
+
+  onMount(() => fetchOrders())
+
+  async function updateOrderStatus(orderId, status) {
+    await updateDoc(doc(db, 'orders', orderId), { status })
+    await fetchOrders()
+  }
 
   const stats = [
     { label: 'Sales Today', value: '$18,742', change: '+8.6% vs yesterday', icon: '💰', color: 'text-aurum-gold' },
@@ -125,19 +134,31 @@ export default function AdminDashboard() {
                 <span class="text-aurum-muted text-xs">Showing 4 of 48</span>
               </div>
               <div class="space-y-3">
-                <For each={orders()}>{order => (
+                <For each={orders()} fallback={
+                  <p class="text-aurum-muted text-sm text-center py-6">Nema narudžbi</p>
+                }>{order => (
                   <div class="flex items-center gap-3 py-3 border-b border-aurum-border last:border-0">
                     <div class="w-10 h-10 bg-aurum-muted rounded overflow-hidden flex items-center justify-center">
                       <span class="text-xs">📦</span>
                     </div>
                     <div class="flex-1">
-                      <p class="text-aurum-text text-sm font-bold">Order {order.id} · {order.customer}</p>
-                      <p class="text-aurum-muted text-xs">{order.date}</p>
+                      <p class="text-aurum-text text-sm font-bold">
+                        Order #{order.id?.slice(0,8).toUpperCase()}
+                      </p>
+                      <p class="text-aurum-muted text-xs">
+                        {order.shippingAddress?.fullName || 'Gost'} · {order.shippingAddress?.city || ''}
+                      </p>
                     </div>
-                    <span class="text-aurum-gold font-bold text-sm">${order.total}</span>
-                    <span class={`text-xs px-2 py-0.5 rounded-full ${statusColors[order.status] || 'text-aurum-muted'}`}>
-                      {order.status}
-                    </span>
+                    <span class="text-aurum-gold font-bold text-sm">${Number(order.total || 0).toFixed(2)}</span>
+                    <select
+                      value={order.status || 'Processing'}
+                      onchange={e => updateOrderStatus(order.id, e.target.value)}
+                      class="input-dark text-xs px-2 py-1 rounded"
+                    >
+                      {['Processing','Awaiting Fulfillment','Shipped','Delivered','Cancelled'].map(s => (
+                        <option value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 )}</For>
               </div>
