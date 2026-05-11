@@ -119,11 +119,12 @@ npm run dev
 ## Deploy na Firebase Hosting
 
 ```bash
+npm install firebase
 npm install -g firebase-tools
 firebase login
 npm run build
 firebase deploy
-# → https://aurumvault.web.app
+# → https://aurumvault-def8b.web.app/
 ```
 
 ---
@@ -133,8 +134,8 @@ firebase deploy
 | | Vrijednost |
 |---|---|
 | 🔑 Lozinka za ulaz | `aurum2025` |
-| 👤 User login | `user@aurumvault.com` / `user123` |
-| 👑 Admin login | `admin@aurumvault.com` / tvoja lozinka |
+| 👤 User login | `matejmatematika@gmail.com` / `matejmatematika` |
+| 👑 Admin login | `admin67@gmail.com` / `admin67` |
 | 🏷️ Kupon | `AURUM10` — 10% popusta (samo prijavljeni) |
 
 ---
@@ -204,7 +205,6 @@ firebase deploy
 ## Što nije napravljeno ❌
 
 - [ ] Plaćanje karticom (Stripe integracija)
-- [ ] Upload slika (Firebase Storage) — trenutno URL
 - [ ] Email potvrda narudžbe
 - [ ] Push notifikacije
 
