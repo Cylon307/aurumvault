@@ -33,8 +33,8 @@ firebase deploy
 | | Vrijednost |
 |---|---|
 | Lozinka za ulaz | `aurum2025` |
-| User login | `user@aurumvault.com` / `user123` |
-| Admin login | `admin@aurumvault.com` / tvoja lozinka |
+| User login | `matejmatematika@gmail.com` / `matejmatematika` |
+| Admin login | `admin67@gmail.com` / `admin67` |
 | Kupon | `AURUM10` (10% popusta, samo prijavljeni) |
 
 ## Stranice
@@ -89,12 +89,11 @@ firebase deploy
 ## Što nije napravljeno ❌
 
 - [ ] Plaćanje karticom (Stripe integracija)
-- [ ] Upload slika (Firebase Storage) — trenutno URL
 - [ ] Email potvrda narudžbe
 - [ ] Push notifikacije
-- [ ] Wishlist funkcionalnost
-- [ ] Recenzije proizvoda
-- [ ] Napredna pretraga
+- [x] Wishlist funkcionalnost
+- [x] Recenzije proizvoda
+- [x] Napredna pretraga (po nazivu, opisu, SKU)
 
 ## Struktura projekta
 

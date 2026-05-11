@@ -2,16 +2,57 @@ import { createSignal, createMemo, Show, For, onMount } from 'solid-js'
 import { useParams, A, useNavigate } from '@solidjs/router'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
-import { products, fetchProducts, addToCart, isAdmin } from '../stores/index.js'
+import { products, fetchProducts, addToCart, isAdmin, isAuthenticated, wishlist, fetchWishlist, toggleWishlist, fetchReviews, addReview } from '../stores/index.js'
 
 export default function ProductPage() {
   const params = useParams()
   const navigate = useNavigate()
+  const [reviews, setReviews] = createSignal([])
+  const [inWishlist, setInWishlist] = createSignal(false)
+  const [reviewRating, setReviewRating] = createSignal(5)
+  const [reviewComment, setReviewComment] = createSignal('')
+  const [reviewSubmitting, setReviewSubmitting] = createSignal(false)
+  const [reviewSuccess, setReviewSuccess] = createSignal(false)
 
-  onMount(() => { if (products().length === 0) fetchProducts() })
+  onMount(async () => {
+    if (products().length === 0) await fetchProducts()
+    if (isAuthenticated()) await fetchWishlist()
+    const r = await fetchReviews(params.id)
+    setReviews(r)
+  })
 
-  const product = createMemo(() => products().find(p => p.id === params.id || p.id === +params.id))
+  const product = createMemo(() => {
+    const p = products().find(p => p.id === params.id || p.id === +params.id)
+    if (p) setInWishlist(wishlist().includes(p.id))
+    return p
+  })
   const related = createMemo(() => products().filter(p => p.id !== params.id && p.category === product()?.category).slice(0, 4))
+
+  async function handleToggleWishlist() {
+    if (!isAuthenticated()) { navigate('/login'); return }
+    const added = await toggleWishlist(product().id)
+    setInWishlist(added)
+  }
+
+  async function handleSubmitReview(e) {
+    e.preventDefault()
+    if (!reviewComment().trim()) return
+    setReviewSubmitting(true)
+    try {
+      await addReview(params.id, reviewRating(), reviewComment())
+      setReviewComment('')
+      setReviewSuccess(true)
+      const r = await fetchReviews(params.id)
+      setReviews(r)
+      setTimeout(() => setReviewSuccess(false), 3000)
+    } catch (err) { console.error(err) }
+    setReviewSubmitting(false)
+  }
+
+  function avgRating() {
+    if (!reviews().length) return 0
+    return (reviews().reduce((s, r) => s + r.rating, 0) / reviews().length).toFixed(1)
+  }
 
   const [selectedSize, setSelectedSize] = createSignal('')
   const [quantity, setQuantity] = createSignal(1)
@@ -181,15 +222,25 @@ export default function ProductPage() {
               <div class="flex gap-3">
                 <button onclick={handleAddToCart}
                   class={`flex-1 py-3 rounded-lg font-bold text-sm transition-all ${
-                    added()
-                      ? 'bg-green-600 text-white border-green-600'
-                      : 'btn-gold'
+                    added() ? 'bg-green-600 text-white' : 'btn-gold'
                   }`}>
-                  {added() ? '✓ Added to Cart' : 'Add to Cart'}
+                  {added() ? '✓ Dodano' : 'Add to Cart'}
                 </button>
                 <button onclick={() => { handleAddToCart(); navigate('/checkout') }}
                   class="flex-1 py-3 rounded-lg font-bold text-sm border border-aurum-gold text-aurum-gold hover:bg-aurum-gold hover:text-aurum-black transition-all">
                   Buy Now
+                </button>
+                <button onclick={handleToggleWishlist}
+                  class={`p-3 rounded-lg border transition-all ${
+                    inWishlist()
+                      ? 'border-red-400 text-red-400 bg-red-900/20'
+                      : 'border-aurum-border text-aurum-muted hover:border-red-400 hover:text-red-400'
+                  }`}
+                  title={inWishlist() ? 'Ukloni iz wishlist' : 'Dodaj u wishlist'}>
+                  <svg class="w-5 h-5" fill={inWishlist() ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
                 </button>
               </div>
 
@@ -247,6 +298,85 @@ export default function ProductPage() {
               </div>
             ))}
           </div>
+          {/* Reviews sekcija */}
+          <div class="mt-16">
+            <div class="flex items-center gap-4 mb-6">
+              <h2 class="section-title">Recenzije</h2>
+              <Show when={reviews().length > 0}>
+                <div class="flex items-center gap-1">
+                  <span class="text-aurum-gold font-bold">{avgRating()}</span>
+                  <span class="text-aurum-gold">{'★'.repeat(Math.round(avgRating()))}</span>
+                  <span class="text-aurum-muted text-xs">({reviews().length})</span>
+                </div>
+              </Show>
+            </div>
+
+            {/* Prikaz recenzija */}
+            <Show when={reviews().length === 0}>
+              <p class="text-aurum-muted text-sm mb-6">Još nema recenzija. Budi prvi!</p>
+            </Show>
+            <div class="space-y-4 mb-10">
+              <For each={reviews()}>{review => (
+                <div class="card-dark p-5">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 bg-aurum-gold rounded-full flex items-center justify-center">
+                        <span class="text-aurum-black font-bold text-xs">{review.userName?.charAt(0)}</span>
+                      </div>
+                      <span class="text-aurum-text text-sm font-medium">{review.userName}</span>
+                    </div>
+                    <span class="text-aurum-gold">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+                  </div>
+                  <p class="text-aurum-muted text-sm leading-relaxed">{review.comment}</p>
+                </div>
+              )}</For>
+            </div>
+
+            {/* Forma za recenziju */}
+            <Show when={isAuthenticated()} fallback={
+              <div class="card-dark p-5 text-center">
+                <p class="text-aurum-muted text-sm">
+                  <A href="/login" class="text-aurum-gold hover:underline">Prijavi se</A> za pisanje recenzije.
+                </p>
+              </div>
+            }>
+              <div class="card-dark p-6">
+                <h3 class="section-title text-base mb-4">Napiši recenziju</h3>
+                <form onsubmit={handleSubmitReview} class="space-y-4">
+                  <div>
+                    <label class="block text-xs text-aurum-muted uppercase tracking-widest mb-2">Ocjena</label>
+                    <div class="flex gap-2">
+                      <For each={[1,2,3,4,5]}>{star => (
+                        <button type="button" onclick={() => setReviewRating(star)}
+                          class={`text-2xl transition-colors ${star <= reviewRating() ? 'text-aurum-gold' : 'text-aurum-muted'}`}>
+                          ★
+                        </button>
+                      )}</For>
+                      <span class="text-aurum-muted text-sm ml-2 self-center">{reviewRating()}/5</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-aurum-muted uppercase tracking-widest mb-2">Komentar</label>
+                    <textarea
+                      value={reviewComment()}
+                      oninput={e => setReviewComment(e.target.value)}
+                      rows={3}
+                      class="input-dark w-full px-4 py-3 text-sm resize-none"
+                      placeholder="Podijeli svoje iskustvo s ovim proizvodom..."
+                    />
+                  </div>
+                  <Show when={reviewSuccess()}>
+                    <p class="text-green-400 text-xs">✓ Recenzija je objavljena!</p>
+                  </Show>
+                  <button type="submit" disabled={reviewSubmitting()}
+                    class="btn-gold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50">
+                    {reviewSubmitting() ? 'Šalje...' : 'Objavi recenziju'}
+                  </button>
+                </form>
+              </div>
+            </Show>
+          </div>
+
         </div>
 
         <Footer />

@@ -1,5 +1,5 @@
-import { createSignal, For, Show, createMemo, onMount } from 'solid-js'
-import { A, useNavigate } from '@solidjs/router'
+import { createSignal, For, Show, createMemo, onMount, createEffect } from 'solid-js'
+import { A, useNavigate, useSearchParams } from '@solidjs/router'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import { products, fetchProducts, CATEGORIES, addToCart, productsLoading } from '../stores/index.js'
@@ -90,17 +90,50 @@ function ProductCard({ product }) {
 }
 
 export default function Catalog() {
+  const [searchParams] = useSearchParams()
   const [category, setCategory] = createSignal('All')
   const [priceMin, setPriceMin] = createSignal(0)
   const [priceMax, setPriceMax] = createSignal(15000)
   const [membersOnly, setMembersOnly] = createSignal(false)
   const [sortBy, setSortBy] = createSignal('Featured')
   const [view, setView] = createSignal('grid')
+  const [search, setSearch] = createSignal('')
 
   onMount(() => fetchProducts())
 
+  // Resetiraj filtere svaki put kad se URL params promijene
+  createEffect(() => {
+    // Resetiraj sve na default
+    setCategory('All')
+    setMembersOnly(false)
+    setSearch('')
+    setSortBy('Featured')
+
+    // Primijeni nove URL filtere
+    if (searchParams.search) setSearch(searchParams.search)
+    if (searchParams.filter === 'exclusive') setMembersOnly(true)
+    if (searchParams.filter === 'new') setSortBy('Newest')
+  })
+
+  const pageTitle = createMemo(() => {
+    if (searchParams.search) return `Rezultati za "${searchParams.search}"`
+    if (searchParams.filter === 'exclusive') return 'Exclusives'
+    if (searchParams.filter === 'new') return 'New Arrivals'
+    return 'All Collections'
+  })
+
   const filtered = createMemo(() => {
     let items = products()
+    // Search filter
+    if (search()) {
+      const q = search().toLowerCase()
+      items = items.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.sku?.toLowerCase().includes(q)
+      )
+    }
     if (category() !== 'All') items = items.filter(p => p.category === category())
     if (membersOnly()) items = items.filter(p => p.membersOnly)
     items = items.filter(p => {
@@ -109,6 +142,7 @@ export default function Catalog() {
     })
     if (sortBy() === 'Price: Low') items = [...items].sort((a,b) => (a.salePrice||a.price) - (b.salePrice||b.price))
     if (sortBy() === 'Price: High') items = [...items].sort((a,b) => (b.salePrice||b.price) - (a.salePrice||a.price))
+    if (sortBy() === 'Newest') items = [...items].sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
     return items
   })
 
@@ -131,7 +165,11 @@ export default function Catalog() {
             <p class="text-aurum-muted mt-3 text-sm leading-relaxed max-w-lg">
               An exclusive limited-run of hand-finished sculptures. Members receive early access and complimentary authentication certificates.
             </p>
-            <button class="btn-gold mt-5 px-6 py-3 rounded-lg text-xs">Explore Collection</button>
+            <button
+              onclick={() => setMembersOnly(true)}
+              class="btn-gold mt-5 px-6 py-3 rounded-lg text-xs">
+              Explore Collection
+            </button>
           </div>
           <div class="hidden md:flex flex-col gap-3">
             <div class="card-dark p-4">
@@ -217,11 +255,15 @@ export default function Catalog() {
         {/* Products */}
         <main class="flex-1">
           <div class="flex items-center justify-between mb-6">
-            <p class="text-aurum-muted text-sm">Showing {filtered().length} items</p>
+            <div>
+              <h2 class="section-title text-lg">{pageTitle()}</h2>
+              <p class="text-aurum-muted text-sm mt-1">Showing {filtered().length} items</p>
+            </div>
             <div class="flex items-center gap-3">
               <select value={sortBy()} onchange={e => setSortBy(e.target.value)}
                 class="input-dark px-3 py-1.5 text-xs">
                 <option>Featured</option>
+                <option>Newest</option>
                 <option>Price: Low</option>
                 <option>Price: High</option>
               </select>

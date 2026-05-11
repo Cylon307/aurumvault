@@ -1,9 +1,9 @@
-import { createSignal, Show } from 'solid-js'
-import { useNavigate } from '@solidjs/router'
+import { createSignal, Show, For, onMount } from 'solid-js'
+import { useNavigate, useSearchParams } from '@solidjs/router'
+import { A } from '@solidjs/router'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
-import { currentUser, isAuthenticated, logout, updateProfile, fetchOrders, orders } from '../stores/index.js'
-import { onMount } from 'solid-js'
+import { currentUser, isAuthenticated, logout, updateProfile, fetchOrders, orders, fetchWishlist, wishlist, toggleWishlist, products, fetchProducts } from '../stores/index.js'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -16,7 +16,11 @@ export default function ProfilePage() {
     return null
   }
 
-  onMount(() => fetchOrders())
+  onMount(() => {
+    fetchOrders()
+    fetchWishlist()
+    if (products().length === 0) fetchProducts()
+  })
 
   const [form, setForm] = createSignal({
     name:    currentUser()?.name || '',
@@ -37,13 +41,8 @@ export default function ProfilePage() {
     }
   }
 
-  const mockOrders = [
-    { id: '#AV-10081', date: '28 Feb 2025', total: 249, status: 'Processing', items: 'Aurum Signet Classic' },
-    { id: '#AV-10065', date: '15 Jan 2025', total: 1150, status: 'Delivered', items: 'Vault Pendant — Hammered' },
-  ]
-
-  const tabs = ['profile', 'orders', 'addresses', 'security']
-  const tabLabels = { profile: 'Profil', orders: 'Narudžbe', addresses: 'Adrese', security: 'Sigurnost' }
+  const tabs = ['profile', 'orders', 'wishlist', 'addresses', 'security']
+  const tabLabels = { profile: 'Profil', orders: 'Narudžbe', wishlist: '♥ Wishlist', addresses: 'Adrese', security: 'Sigurnost' }
 
   return (
     <div class="min-h-screen bg-aurum-black">
@@ -150,7 +149,39 @@ export default function ProfilePage() {
           </div>
         </Show>
 
-        {/* Addresses Tab */}
+        {/* Wishlist Tab */}
+        <Show when={activeTab() === 'wishlist'}>
+          <div>
+            <h2 class="section-title text-base mb-4">♥ Wishlist</h2>
+            <Show when={wishlist().length === 0}>
+              <div class="card-dark p-10 text-center">
+                <p class="text-aurum-muted mb-3">Wishlist je prazan.</p>
+                <A href="/catalog" class="btn-gold px-6 py-2.5 rounded-lg text-sm inline-block">
+                  Istraži katalog
+                </A>
+              </div>
+            </Show>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <For each={products().filter(p => wishlist().includes(p.id))}>{product => (
+                <A href={`/product/${product.id}`} class="card-dark overflow-hidden group hover:border-aurum-gold transition-all duration-300">
+                  <div class="aspect-square overflow-hidden bg-aurum-dark relative">
+                    <img src={product.images?.[0]} alt={product.name}
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <button
+                      onclick={async e => { e.preventDefault(); await toggleWishlist(product.id) }}
+                      class="absolute top-2 right-2 w-8 h-8 bg-aurum-black/70 rounded-full flex items-center justify-center text-red-400 hover:bg-red-900/50 transition-colors">
+                      ♥
+                    </button>
+                  </div>
+                  <div class="p-3">
+                    <p class="text-xs font-display text-aurum-text">{product.name}</p>
+                    <p class="text-aurum-gold text-sm font-bold mt-1">${product.price?.toLocaleString()}</p>
+                  </div>
+                </A>
+              )}</For>
+            </div>
+          </div>
+        </Show>
         <Show when={activeTab() === 'addresses'}>
           <div class="card-dark p-6 max-w-lg">
             <h2 class="section-title text-base mb-4">Adrese dostave</h2>

@@ -188,3 +188,55 @@ export async function validateCoupon(code) {
   }
   return data
 }
+
+// ── Wishlist ─────────────────────────────────────────────────
+import { arrayUnion, arrayRemove } from 'firebase/firestore'
+
+export const [wishlist, setWishlist] = createSignal([])
+
+export async function fetchWishlist() {
+  const user = currentUser()
+  if (!user) return
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid))
+    setWishlist(userDoc.data()?.wishlist || [])
+  } catch (err) { console.error(err) }
+}
+
+export async function toggleWishlist(productId) {
+  const user = currentUser()
+  if (!user) return false
+  const inList = wishlist().includes(productId)
+  try {
+    await updateDoc(doc(db, 'users', user.uid), {
+      wishlist: inList ? arrayRemove(productId) : arrayUnion(productId)
+    })
+    setWishlist(prev =>
+      inList ? prev.filter(id => id !== productId) : [...prev, productId]
+    )
+    return !inList
+  } catch (err) { console.error(err); return false }
+}
+
+// ── Reviews ──────────────────────────────────────────────────
+export async function fetchReviews(productId) {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'reviews'), where('productId', '==', productId))
+    )
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch (err) { console.error(err); return [] }
+}
+
+export async function addReview(productId, rating, comment) {
+  const user = currentUser()
+  if (!user) throw new Error('Morate biti prijavljeni za recenziju.')
+  await addDoc(collection(db, 'reviews'), {
+    productId,
+    userId:   user.uid,
+    userName: user.name,
+    rating:   Number(rating),
+    comment,
+    createdAt: serverTimestamp(),
+  })
+}
