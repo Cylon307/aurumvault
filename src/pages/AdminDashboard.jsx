@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   if (!isAdmin()) { navigate('/login'); return null }
 
   // ── Session Timer ─────────────────────────────────────────
-  const SESSION_DURATION = 1 * 60 // 1 minuta za testiranje (promijeni na 15*60 za produkciju)
+  const SESSION_DURATION = 1 * 60 
   const [secondsLeft, setSecondsLeft] = createSignal(SESSION_DURATION)
   const [sessionWarning, setSessionWarning] = createSignal(false)
 
