@@ -72,7 +72,7 @@ export default function CheckoutPage() {
         discount: discount(),
         shipping: shipping(),
         tax: tax(),
-        status: 'Processing',
+        status: 'U obradi',
         paymentMethod: paymentMethod(),
         coupon: couponApplied() ? coupon() : null,
         shippingAddress: {
@@ -130,7 +130,7 @@ export default function CheckoutPage() {
               <div class="flex justify-between text-sm">
                 <span class="text-aurum-muted">Status</span>
                 <span class="text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full text-xs">
-                  🚚 Processing
+                  🚚 U obradi
                 </span>
               </div>
               <div class="flex justify-between text-sm">
@@ -286,8 +286,8 @@ export default function CheckoutPage() {
                   <h3 class="text-xs text-aurum-muted uppercase tracking-widest mb-3">Metoda dostave</h3>
                   <div class="space-y-2">
                     {[
-                      { value: 'standard', label: 'Standard — 3–5 business days', price: cartTotal() > 100 ? 'Besplatno' : '$12.00' },
-                      { value: 'express', label: 'Express — 1–2 business days', price: '$12.00 extra' },
+                      { value: 'standard', label: 'Standard — 3–5 radnih dana', price: cartTotal() > 100 ? 'Besplatno' : '$12.00' },
+                      { value: 'express', label: 'Express — 1–2 radna dana', price: '$12.00 extra' },
                     ].map(opt => (
                       <label class={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
                         form().shipping === opt.value ? 'border-aurum-gold bg-aurum-dark' : 'border-aurum-border hover:border-aurum-muted'
@@ -322,9 +322,9 @@ export default function CheckoutPage() {
 
                 <div class="space-y-3 mb-6">
                   {[
-                    { value: 'visa', label: 'Visa ending 4242', sub: 'Nikad ne ističe' },
-                    { value: 'mc',   label: 'Mastercard ending 8828', sub: 'Expires 12/2026' },
-                    { value: 'amex', label: 'American Express ending 3358', sub: 'Expires 09/2025' },
+                    { value: 'visa', label: 'Visa završava 4242', sub: 'Nikad ne ističe' },
+                    { value: 'mc',   label: 'Mastercard završava 8828', sub: 'Expires 12/2026' },
+                    { value: 'amex', label: 'American Express završava 3358', sub: 'Expires 09/2025' },
                   ].map(card => (
                     <label class={`flex items-center gap-3 p-4 rounded border cursor-pointer transition-colors ${
                       paymentMethod() === card.value ? 'border-aurum-gold bg-aurum-dark' : 'border-aurum-border hover:border-aurum-muted'
@@ -332,7 +332,7 @@ export default function CheckoutPage() {
                       <input type="radio" name="payment" checked={paymentMethod() === card.value}
                         onchange={() => setPaymentMethod(card.value)} class="radio radio-warning radio-sm" />
                       <div class="w-10 h-6 bg-aurum-muted rounded flex items-center justify-center text-xs text-white">
-                        {card.value === 'visa' ? 'VISA' : card.value === 'mc' ? 'MC' : 'AMEX'}
+                        {card.value === 'visa' ? 'Visa' : card.value === 'mc' ? 'MC' : 'Amex'}
                       </div>
                       <div class="flex-1">
                         <p class="text-sm text-aurum-text">{card.label}</p>
@@ -355,7 +355,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <p class="text-center text-aurum-muted text-xs mt-4">
-                  🔒 PCI-SSL compliant. Vaši podaci su sigurni.
+                  🔒 PCI-SSL zaštita. Vaši podaci su sigurni.
                 </p>
               </div>
 

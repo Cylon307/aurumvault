@@ -12,7 +12,7 @@ export default function AdminProductForm() {
   if (!isAdmin()) { navigate('/login'); return null }
 
   const [saved, setSaved] = createSignal(false)
-  const [published, setPublished] = createSignal(false)
+  const [published, setObjavied] = createSignal(false)
   const [deleting, setDeleting] = createSignal(false)
   const [saving, setSaving] = createSignal(false)
   const [error, setError] = createSignal('')
@@ -63,7 +63,7 @@ export default function AdminProductForm() {
     setSaving(false)
   }
 
-  async function handlePublish() {
+  async function handleObjavi() {
     setSaving(true); setError('')
     try {
       const data = { ...buildProductData(), published: true }
@@ -72,7 +72,7 @@ export default function AdminProductForm() {
       } else {
         await addDoc(collection(db, 'products'), { ...data, createdAt: serverTimestamp() })
       }
-      setPublished(true)
+      setObjavied(true)
       await fetchProducts()
       setTimeout(() => navigate('/admin'), 1500)
     } catch (err) {
@@ -144,7 +144,7 @@ export default function AdminProductForm() {
             {isEdit ? 'Uredi proizvod' : 'Dodaj novi proizvod'}
           </h1>
           <span class="text-xs border border-yellow-500 text-yellow-500 px-2 py-0.5 rounded">
-            ⚠ Inline validation enabled
+            ⚠ Provjera uključena
           </span>
         </div>
 
@@ -330,7 +330,7 @@ export default function AdminProductForm() {
                 class="w-full border border-aurum-border text-aurum-text py-2.5 rounded text-sm hover:border-aurum-gold transition-colors disabled:opacity-50">
                 {saving() ? 'Sprema...' : '💾 Spremi draft'}
               </button>
-              <button onclick={handlePublish} disabled={saving()}
+              <button onclick={handleObjavi} disabled={saving()}
                 class="w-full btn-gold py-2.5 rounded text-sm disabled:opacity-50">
                 {published() ? '✓ Objavljeno!' : saving() ? 'Objavljuje...' : '🚀 Objavi'}
               </button>

@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   if (!isAdmin()) { navigate('/login'); return null }
 
   // ── Session Timer ─────────────────────────────────────────
-  const SESSION_DURATION = 1 * 60 
+  const SESSION_DURATION = 1 * 60 // 1 minuta za testiranje (promijeni na 15*60 za produkciju)
   const [secondsLeft, setSecondsLeft] = createSignal(SESSION_DURATION)
   const [sessionWarning, setSessionWarning] = createSignal(false)
 
@@ -87,8 +87,8 @@ export default function AdminDashboard() {
 
   const auditLog = [
     { text: `${currentUser()?.name} logged in`, time: 'Just now', type: 'info' },
-    { text: 'Role change: Leila Morgan promoted to Manager', time: '28 Feb 2026 · 0:01', type: 'warning' },
-    { text: 'System: Failed login attempt blocked (3 attempts)', time: '28 Feb 2026 · 03:05', type: 'error' },
+    { text: "Promjena uloge: Leila Morgan postala Menadžer", time: '28 Feb 2026 · 0:01', type: 'warning' },
+    { text: 'Sustav: Blokiran neuspjeli pokušaj prijave (3 attempts)', time: '28 Feb 2026 · 03:05', type: 'error' },
   ]
 
   return (
@@ -103,8 +103,8 @@ export default function AdminDashboard() {
             </div>
             <span class="font-display font-bold text-aurum-gold tracking-widest hidden sm:block">AurumVault</span>
           </div>
-          <span class="text-red-400 border border-red-400/30 px-2 py-0.5 rounded">🔒 Secure Admin Area</span>
-          <span class="text-aurum-muted hidden md:block">2-Step Verification: Enabled</span>
+          <span class="text-red-400 border border-red-400/30 px-2 py-0.5 rounded">🔒 Sigurno admin područje</span>
+          <span class="text-aurum-muted hidden md:block">Dvofaktorska provjera: Aktivna</span>
           <span class={`font-medium ${sessionWarning() ? 'text-red-400 animate-pulse' : 'text-green-400'}`}>
             Session active • Expires in <span class="font-bold">{formatTime(secondsLeft())}</span>
           </span>
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         <div class="flex items-center gap-4">
           <div class="text-right">
             <p class="text-aurum-text font-bold">{currentUser()?.name}</p>
-            <p class="text-aurum-gold text-xs">Role: Super Admin</p>
+            <p class="text-aurum-gold text-xs">Uloga: Super Administrator</p>
           </div>
           <button onclick={() => logout().then(() => navigate('/login'))}
             class="border border-aurum-border text-aurum-muted px-3 py-1 rounded hover:border-red-400 hover:text-red-400 transition-colors">
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
             <div class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Security</div>
             <div class="flex items-center gap-2 text-xs text-green-400 mb-3">
               <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              Audit Trail Live
+              Revizijski trag uživo
             </div>
             <div class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Quick Role Controls</div>
             {[{ role: 'Manager', active: true }, { role: 'Auditor', active: false }].map(r => (
@@ -169,9 +169,9 @@ export default function AdminDashboard() {
           <Show when={activeNav() === 'dashboard'}>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
-                { label: 'Sales Today',       value: '$18,742', change: '+8.6% vs yesterday', icon: '💰', color: 'text-aurum-gold' },
-                { label: 'Orders Pending',    value: orders().filter(o => o.status === 'Processing').length || '0', change: 'U obradi', icon: '📦', color: 'text-yellow-400' },
-                { label: 'Inventory Alerts',  value: products().filter(p => p.stock <= 3).length || '0', change: 'Niska zaliha', icon: '⚠', color: 'text-red-400' },
+                { label: 'Prodaja danas',       value: '$18,742', change: '+8.6% vs yesterday', icon: '💰', color: 'text-aurum-gold' },
+                { label: 'Narudžbe na čekanju',    value: orders().filter(o => o.status === 'Processing').length || '0', change: 'U obradi', icon: '📦', color: 'text-yellow-400' },
+                { label: 'Upozorenja zaliha',  value: products().filter(p => p.stock <= 3).length || '0', change: 'Niska zaliha', icon: '⚠', color: 'text-red-400' },
               ].map(stat => (
                 <div class="card-dark p-5 flex items-start justify-between">
                   <div>
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
 
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div class="xl:col-span-2 card-dark p-5">
-                <h2 class="section-title text-base mb-4">Latest transactions</h2>
+                <h2 class="section-title text-base mb-4">Najnovije transakcije</h2>
                 <div class="space-y-3">
                   <For each={orders().slice(0, 5)} fallback={
                     <p class="text-aurum-muted text-sm text-center py-6">Nema narudžbi</p>
@@ -198,10 +198,10 @@ export default function AdminDashboard() {
                         <p class="text-aurum-muted text-xs">{order.shippingAddress?.fullName || 'Gost'}</p>
                       </div>
                       <span class="text-aurum-gold font-bold text-sm">${Number(order.total||0).toFixed(2)}</span>
-                      <select value={order.status || 'Processing'}
+                      <select value={order.status || 'U obradi'}
                         onchange={e => updateOrderStatus(order.id, e.target.value)}
                         class="input-dark text-xs px-2 py-1 rounded flex-shrink-0">
-                        {['Processing','Awaiting Fulfillment','Shipped','Delivered','Cancelled'].map(s => (
+                        {['U obradi','Čeka pripremu','Poslano','Dostavljeno','Otkazano'].map(s => (
                           <option value={s}>{s}</option>
                         ))}
                       </select>
@@ -212,26 +212,26 @@ export default function AdminDashboard() {
 
               <div class="space-y-4">
                 <div class="card-dark p-5">
-                  <h3 class="section-title text-sm mb-4">Quick Actions</h3>
+                  <h3 class="section-title text-sm mb-4">Brze radnje</h3>
                   <div class="space-y-2">
                     <A href="/admin/products/new"
                       class="flex items-center gap-2 bg-aurum-gold text-aurum-black text-sm font-bold px-4 py-2.5 rounded w-full hover:bg-yellow-300 transition-colors">
-                      + Add New Product
+                      + Dodaj novi proizvod
                     </A>
                     <button onclick={() => setActiveNav('promotions')}
                       class="flex items-center gap-2 border border-aurum-border text-aurum-text text-sm px-4 py-2.5 rounded w-full hover:border-aurum-gold transition-colors">
-                      🏷 Create Promotion
+                      🏷 Kreiraj promociju
                     </button>
                     <button onclick={() => { setActiveNav('customers'); loadCustomers() }}
                       class="flex items-center gap-2 border border-aurum-border text-aurum-text text-sm px-4 py-2.5 rounded w-full hover:border-aurum-gold transition-colors">
-                      👥 Manage Roles
+                      👥 Upravljaj ulogama
                     </button>
                   </div>
                 </div>
 
                 <div class="card-dark p-5">
                   <div class="flex items-center justify-between mb-3">
-                    <h3 class="section-title text-sm">Audit Trail</h3>
+                    <h3 class="section-title text-sm">Revizijski trag</h3>
                     <span class="text-xs text-aurum-muted">{auditLog.length} events</span>
                   </div>
                   <div class="space-y-3">
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
 
             {/* Low Stock */}
             <div class="card-dark p-5 mt-6">
-              <h2 class="section-title text-base mb-4">Items needing restock</h2>
+              <h2 class="section-title text-base mb-4">Artikli koji trebaju dopunu</h2>
               <Show when={products().filter(p => p.stock <= 5).length === 0}>
                 <p class="text-aurum-muted text-sm">Sve zalihe su uredne.</p>
               </Show>
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
                   </div>
                   <span class={`text-xs font-bold px-2 py-0.5 rounded-full ${
                     item.stock <= 2 ? 'text-red-400 bg-red-900/30' : 'text-yellow-400 bg-yellow-900/30'
-                  }`}>{item.stock <= 2 ? 'CRITICAL' : 'LOW'}</span>
+                  }`}>{item.stock <= 2 ? 'KRITIČNO' : 'NISKO'}</span>
                   <A href={`/admin/products/edit/${item.id}`}
                     class="text-xs text-aurum-gold border border-aurum-gold px-2 py-1 rounded hover:bg-aurum-gold hover:text-aurum-black transition-all">
                     Uredi
@@ -298,10 +298,10 @@ export default function AdminDashboard() {
                   </div>
                   <div class="flex items-center gap-3 flex-shrink-0">
                     <span class="text-aurum-gold font-bold">${Number(order.total||0).toFixed(2)}</span>
-                    <select value={order.status || 'Processing'}
+                    <select value={order.status || 'U obradi'}
                       onchange={e => updateOrderStatus(order.id, e.target.value)}
                       class="input-dark text-xs px-2 py-1.5 rounded">
-                      {['Processing','Awaiting Fulfillment','Shipped','Delivered','Cancelled'].map(s => (
+                      {['U obradi','Čeka pripremu','Poslano','Dostavljeno','Otkazano'].map(s => (
                         <option value={s}>{s}</option>
                       ))}
                     </select>
@@ -453,8 +453,8 @@ export default function AdminDashboard() {
         <div class="w-48 bg-aurum-dark border-l border-aurum-border p-4 hidden xl:block flex-shrink-0">
           <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-3">Role-Based Controls</h4>
           {[
-            { label: 'Grant product edit', active: true },
-            { label: 'Allow promotions create', active: false },
+            { label: 'Odobrenje uređivanja proizvoda', active: true },
+            { label: 'Dozvola kreiranja promocija', active: false },
           ].map(ctrl => (
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs text-aurum-text leading-tight pr-2">{ctrl.label}</span>
@@ -463,7 +463,7 @@ export default function AdminDashboard() {
           ))}
 
           <div class="mt-6 pt-4 border-t border-aurum-border card-dark p-3">
-            <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Session Timeout</h4>
+            <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Istek sesije</h4>
             <p class="text-xs text-aurum-muted leading-relaxed mb-3">
               Ističe za:{' '}
               <span class={`font-bold ${sessionWarning() ? 'text-red-400 animate-pulse' : 'text-aurum-gold'}`}>
@@ -475,11 +475,11 @@ export default function AdminDashboard() {
             </Show>
             <div class="flex flex-col gap-2">
               <button onclick={extendSession} class="btn-gold py-1.5 rounded text-xs">
-                Extend Session
+                Produži sesiju
               </button>
               <button onclick={() => logout().then(() => navigate('/login'))}
                 class="border border-aurum-border text-aurum-muted py-1.5 rounded text-xs hover:border-red-400 hover:text-red-400 transition-colors">
-                Logout Now
+                Odjavi se odmah
               </button>
             </div>
           </div>

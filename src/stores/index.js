@@ -166,7 +166,7 @@ export async function createOrder(orderData) {
   const order = {
     ...orderData,
     userId: user?.uid || null,
-    status: 'Processing',
+    status: 'U obradi',
     createdAt: serverTimestamp(),
   }
   const docRef = await addDoc(collection(db, 'orders'), order)

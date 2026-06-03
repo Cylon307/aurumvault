@@ -42,7 +42,7 @@ export default function ProfilePage() {
   }
 
   const tabs = ['profile', 'orders', 'wishlist', 'addresses', 'security']
-  const tabLabels = { profile: 'Profil', orders: 'Narudžbe', wishlist: '♥ Wishlist', addresses: 'Adrese', security: 'Sigurnost' }
+  const tabLabels = { profile: 'Profil', orders: 'Narudžbe', wishlist: '♥ Lista želja', addresses: 'Adrese', security: 'Sigurnost' }
 
   return (
     <div class="min-h-screen bg-aurum-black">
@@ -152,10 +152,10 @@ export default function ProfilePage() {
         {/* Wishlist Tab */}
         <Show when={activeTab() === 'wishlist'}>
           <div>
-            <h2 class="section-title text-base mb-4">♥ Wishlist</h2>
+            <h2 class="section-title text-base mb-4">♥ Lista želja</h2>
             <Show when={wishlist().length === 0}>
               <div class="card-dark p-10 text-center">
-                <p class="text-aurum-muted mb-3">Wishlist je prazan.</p>
+                <p class="text-aurum-muted mb-3">Lista želja je prazna.</p>
                 <A href="/catalog" class="btn-gold px-6 py-2.5 rounded-lg text-sm inline-block">
                   Istraži katalog
                 </A>

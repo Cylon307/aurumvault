@@ -8,58 +8,41 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = createSignal(false)
   const [searchQuery, setSearchQuery] = createSignal('')
 
-  function handleLogout() {
-    logout()
-    navigate('/login')
-  }
+  function handleLogout() { logout(); navigate('/login') }
 
   function handleSearch(e) {
     e.preventDefault()
     if (searchQuery().trim()) {
       navigate(`/catalog?search=${encodeURIComponent(searchQuery().trim())}`)
-      setSearchOpen(false)
-      setSearchQuery('')
+      setSearchOpen(false); setSearchQuery('')
     }
   }
 
   return (
     <nav class="sticky top-0 z-50 bg-aurum-black border-b border-aurum-border">
       <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-
-        {/* Logo */}
         <A href="/catalog" class="flex items-center gap-2 group flex-shrink-0">
           <div class="w-8 h-8 bg-aurum-gold rounded-full flex items-center justify-center">
             <span class="text-aurum-black font-display font-black text-sm">A</span>
           </div>
-          <span class="font-display font-bold text-lg text-aurum-gold tracking-widest gold-glow">
-            AurumVault
-          </span>
+          <span class="font-display font-bold text-lg text-aurum-gold tracking-widest gold-glow">AurumVault</span>
         </A>
 
-        {/* Desktop Nav */}
         <div class="hidden md:flex items-center gap-8">
-          <A href="/catalog" class="nav-link">Collections</A>
-          <A href="/catalog?filter=new" class="nav-link">New Arrivals</A>
-          <A href="/catalog?filter=exclusive" class="nav-link text-aurum-gold">Exclusives</A>
+          <A href="/catalog" class="nav-link">Kolekcije</A>
+          <A href="/catalog?filter=new" class="nav-link">Novi dolasci</A>
+          <A href="/catalog?filter=exclusive" class="nav-link text-aurum-gold">Ekskluzivno</A>
         </div>
 
-        {/* Right side */}
         <div class="flex items-center gap-3">
-
-          {/* Search */}
           <div class="relative">
             <Show when={searchOpen()}>
               <form onsubmit={handleSearch}
                 class="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-aurum-dark border border-aurum-gold rounded-lg px-3 py-1.5"
                 style="min-width: 220px">
-                <input
-                  type="text"
-                  value={searchQuery()}
-                  oninput={e => setSearchQuery(e.target.value)}
-                  placeholder="Pretraži proizvode..."
-                  class="bg-transparent text-aurum-text text-sm outline-none flex-1"
-                  autofocus
-                />
+                <input type="text" value={searchQuery()} oninput={e => setSearchQuery(e.target.value)}
+                  placeholder="Pretraži proizvode..." autofocus
+                  class="bg-transparent text-aurum-text text-sm outline-none flex-1" />
                 <button type="submit" class="text-aurum-gold text-xs">→</button>
                 <button type="button" onclick={() => setSearchOpen(false)} class="text-aurum-muted hover:text-aurum-gold">×</button>
               </form>
@@ -79,27 +62,20 @@ export default function Navbar() {
             </A>
           </Show>
 
-          <Show when={isAuthenticated()} fallback={
-            <A href="/login" class="nav-link text-sm">Account</A>
-          }>
+          <Show when={isAuthenticated()} fallback={<A href="/login" class="nav-link text-sm">Račun</A>}>
             <div class="flex items-center gap-2">
               <A href="/profile" class="nav-link flex items-center gap-1">
                 <div class="w-7 h-7 bg-aurum-gold rounded-full flex items-center justify-center">
-                  <span class="text-aurum-black font-bold text-xs">
-                    {currentUser()?.name?.charAt(0) || 'U'}
-                  </span>
+                  <span class="text-aurum-black font-bold text-xs">{currentUser()?.name?.charAt(0) || 'K'}</span>
                 </div>
                 <span class="hidden sm:block text-sm">{currentUser()?.name?.split(' ')[0]}</span>
               </A>
-              <button onclick={handleLogout} class="nav-link text-xs opacity-50 hover:opacity-100">
-                Odjava
-              </button>
+              <button onclick={handleLogout} class="nav-link text-xs opacity-50 hover:opacity-100">Odjava</button>
             </div>
           </Show>
 
-          {/* Wishlist */}
           <Show when={isAuthenticated()}>
-            <A href="/profile?tab=wishlist" class="p-2 text-aurum-muted hover:text-aurum-gold transition-colors">
+            <A href="/profile?tab=wishlist" class="p-2 text-aurum-muted hover:text-aurum-gold transition-colors" title="Lista želja">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -107,7 +83,6 @@ export default function Navbar() {
             </A>
           </Show>
 
-          {/* Cart */}
           <A href="/checkout" class="relative p-2 text-aurum-text hover:text-aurum-gold transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -120,7 +95,6 @@ export default function Navbar() {
             </Show>
           </A>
 
-          {/* Mobile menu btn */}
           <button onclick={() => setMenuOpen(!menuOpen())} class="md:hidden text-aurum-text hover:text-aurum-gold">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -130,12 +104,11 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       <Show when={menuOpen()}>
         <div class="md:hidden bg-aurum-dark border-t border-aurum-border px-4 py-4 flex flex-col gap-4">
-          <A href="/catalog" class="nav-link" onclick={() => setMenuOpen(false)}>Collections</A>
-          <A href="/catalog?filter=new" class="nav-link" onclick={() => setMenuOpen(false)}>New Arrivals</A>
-          <A href="/catalog?filter=exclusive" class="nav-link text-aurum-gold" onclick={() => setMenuOpen(false)}>Exclusives</A>
+          <A href="/catalog" class="nav-link" onclick={() => setMenuOpen(false)}>Kolekcije</A>
+          <A href="/catalog?filter=new" class="nav-link" onclick={() => setMenuOpen(false)}>Novi dolasci</A>
+          <A href="/catalog?filter=exclusive" class="nav-link text-aurum-gold" onclick={() => setMenuOpen(false)}>Ekskluzivno</A>
           <form onsubmit={e => { handleSearch(e); setMenuOpen(false) }} class="flex gap-2">
             <input type="text" value={searchQuery()} oninput={e => setSearchQuery(e.target.value)}
               placeholder="Pretraži..." class="input-dark flex-1 px-3 py-2 text-sm" />
