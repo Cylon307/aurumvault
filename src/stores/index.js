@@ -190,32 +190,55 @@ export async function validateCoupon(code) {
 }
 
 // ── Wishlist ─────────────────────────────────────────────────
-import { arrayUnion, arrayRemove } from 'firebase/firestore'
-
 export const [wishlist, setWishlist] = createSignal([])
 
 export async function fetchWishlist() {
   const user = currentUser()
   if (!user) return
+
   try {
-    const userDoc = await getDoc(doc(db, 'users', user.uid))
-    setWishlist(userDoc.data()?.wishlist || [])
-  } catch (err) { console.error(err) }
+    const wishlistRef = doc(db, "wishlists", user.uid)
+    const wishlistSnap = await getDoc(wishlistRef)
+
+    if (wishlistSnap.exists()) {
+      setWishlist(wishlistSnap.data().products || [])
+    } else {
+      setWishlist([])
+    }
+  } catch (err) {
+    console.error("Greška pri dohvaćanju wishlist-e:", err)
+  }
 }
 
 export async function toggleWishlist(productId) {
   const user = currentUser()
   if (!user) return false
-  const inList = wishlist().includes(productId)
+
+  const wishlistRef = doc(db, "wishlists", user.uid)
+  const currentWishlist = wishlist()
+  const isInWishlist = currentWishlist.includes(productId)
+
   try {
-    await updateDoc(doc(db, 'users', user.uid), {
-      wishlist: inList ? arrayRemove(productId) : arrayUnion(productId)
-    })
-    setWishlist(prev =>
-      inList ? prev.filter(id => id !== productId) : [...prev, productId]
-    )
-    return !inList
-  } catch (err) { console.error(err); return false }
+    if (isInWishlist) {
+      await updateDoc(wishlistRef, {
+        products: arrayRemove(productId),
+        updatedAt: serverTimestamp()
+      })
+      setWishlist(prev => prev.filter(id => id !== productId))
+    } else {
+      await setDoc(wishlistRef, {
+        userId: user.uid,
+        products: arrayUnion(productId),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+      setWishlist(prev => [...prev, productId])
+    }
+    return !isInWishlist
+  } catch (err) {
+    console.error("Greška pri toggle wishlist:", err)
+    return false
+  }
 }
 
 // ── Reviews ──────────────────────────────────────────────────
