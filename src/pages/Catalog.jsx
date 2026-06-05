@@ -177,9 +177,12 @@ export default function Catalog() {
               <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Kategorija</h4>
               <select value={category()} onchange={e => setCategory(e.target.value)}
                 class="input-dark w-full px-3 py-2 text-sm">
-                <For each={CATEGORIES}>{cat => (
-                  <option value={cat}>{CATEGORIES_HR[cat] || cat}</option>
-                )}</For>
+                <option value="Sve">Sve kategorije</option>
+                <option value="Rings">Prstenje</option>
+                <option value="Necklaces">Ogrlice</option>
+                <option value="Watches">Satovi</option>
+                <option value="Accessories">Dodaci</option>
+                <option value="Art Objects">Umjetnički predmeti</option>
               </select>
             </div>
             <div>

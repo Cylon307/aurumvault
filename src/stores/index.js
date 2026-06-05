@@ -251,15 +251,35 @@ export async function fetchReviews(productId) {
   } catch (err) { console.error(err); return [] }
 }
 
+export async function fetchReviews(productId) {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'review'), where('productId', '==', productId))  // ← 'review' umjesto 'reviews'
+    )
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch (err) {
+    console.error(err)
+    return []
+  }
+}
+
 export async function addReview(productId, rating, comment) {
   const user = currentUser()
   if (!user) throw new Error('Morate biti prijavljeni za recenziju.')
-  await addDoc(collection(db, 'reviews'), {
-    productId,
-    userId:   user.uid,
-    userName: user.name,
-    rating:   Number(rating),
-    comment,
-    createdAt: serverTimestamp(),
-  })
+
+  try {
+    await addDoc(collection(db, 'review'), {   // ← 'review' umjesto 'reviews'
+      productId,
+      userId: user.uid,
+      userName: user.name || 'Anonimni korisnik',
+      rating: Number(rating),
+      comment: comment.trim(),
+      ocjena: Number(rating),        // ako koristiš hrvatski naziv polja
+      createdAt: serverTimestamp(),
+    })
+    return true
+  } catch (err) {
+    console.error("Greška pri dodavanju recenzije:", err)
+    throw err
+  }
 }
