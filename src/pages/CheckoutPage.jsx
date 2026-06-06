@@ -441,7 +441,7 @@ async function placeOrder() {
 
               <div class="border-t border-aurum-border mt-4 pt-4 space-y-2 text-sm">
                 <div class="flex justify-between text-aurum-muted">
-                  <span>Subtotal</span><span>${cartTotal().toLocaleString()}</span>
+                  <span>Ukupna cijena</span><span>${cartTotal().toLocaleString()}</span>
                 </div>
                 <Show when={couponApplied()}>
                   <div class="flex justify-between text-green-400">
