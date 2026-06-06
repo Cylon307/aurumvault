@@ -32,68 +32,70 @@ export default function CheckoutPage() {
   const total = createMemo(() => cartTotal() - discount() + shipping() + tax())
 
   async function applyCoupon() {
-    setCouponError('')
-    try {
-      const data = await validateCoupon(coupon())
-      setCouponData(data)
-      setCouponApplied(true)
-    } catch (err) {
-      setCouponError(err.message)
-    }
+  setCouponError('')
+  try {
+    const data = await validateCoupon(coupon())
+    console.log('couponData:', data) // ← dodaj ovo
+    setCouponData(data)
+    setCouponApplied(true)
+  } catch (err) {
+    setCouponError(err.message)
   }
+}
 
   const [orderError, setOrderError] = createSignal('')
 
-  async function placeOrder() {
-    // Blokira narudžbu ako je košarica prazna
-    if (cartItems().length === 0) {
-      setOrderError('Košarica je prazna — ne možeš naručiti.')
-      return
-    }
-    // Blokira ako nisu ispunjeni podaci za dostavu
-    if (!form().fullName || !form().address || !form().city) {
-      setOrderError('Molimo popuni sve podatke za dostavu.')
-      return
-    }
-
-    setLoading(true)
-    setOrderError('')
-    try {
-      const id = await createOrder({
-        items: cartItems().map(i => ({
-          id: i.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          sku: i.sku || '',
-        })),
-        total: total(),
-        subtotal: cartTotal(),
-        discount: discount(),
-        shipping: shipping(),
-        tax: tax(),
-        status: 'U obradi',
-        paymentMethod: paymentMethod(),
-        coupon: couponApplied() ? coupon() : null,
-        shippingAddress: {
-          fullName: form().fullName,
-          phone:    form().phone,
-          address:  form().address,
-          city:     form().city,
-          postal:   form().postal,
-          country:  form().country,
-        },
-      })
-      setOrderId(id)
-      clearCart()
-      setOrderComplete(true)
-    } catch (err) {
-      setOrderError('Greška pri narudžbi: ' + err.message)
-      console.error(err)
-    }
-    setLoading(false)
+async function placeOrder() {
+  if (cartItems().length === 0) {
+    setOrderError('Košarica je prazna — ne možeš naručiti.')
+    return
+  }
+  if (!form().fullName || !form().address || !form().city) {
+    setOrderError('Molimo popuni sve podatke za dostavu.')
+    return
   }
 
+  setLoading(true)
+  setOrderError('')
+  try {
+    const orderPayload = {
+      items: cartItems().map(i => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        sku: i.sku || '',
+        image: i.images?.[0] || '',
+      })),
+      total: total(),
+      subtotal: cartTotal(),
+      discount: discount(),
+      shipping: shipping(),
+      tax: tax(),
+      status: 'U obradi',
+      paymentMethod: paymentMethod(),
+      coupon: couponApplied() ? coupon() : null,
+      shippingAddress: {
+        fullName: form().fullName,
+        phone:    form().phone,
+        address:  form().address,
+        city:     form().city,
+        postal:   form().postal,
+        country:  form().country,
+      },
+    }
+
+    console.log('Šaljem narudžbu:', orderPayload)
+    const id = await createOrder(orderPayload)
+    setOrderId(id)
+    clearCart()
+    setOrderComplete(true)
+  } catch (err) {
+    setOrderError('Greška pri narudžbi: ' + err.message)
+    console.error('createOrder greška:', err)
+  }
+  setLoading(false)
+}
   const steps = ['Košarica', 'Dostava', 'Plaćanje', 'Potvrda']
 
   return (

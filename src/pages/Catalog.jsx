@@ -2,7 +2,14 @@ import { createSignal, For, Show, createMemo, onMount, createEffect } from 'soli
 import { A, useNavigate, useSearchParams } from '@solidjs/router'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
-import { products, fetchProducts, CATEGORIES, addToCart, productsLoading } from '../stores/index.js'
+import { 
+  products, 
+  fetchProducts, 
+  CATEGORIES, 
+  addToCart, 
+  productsLoading,
+  isAuthenticated 
+} from '../stores/index.js'
 
 const CATEGORIES_HR = {
   'Sve': 'Sve kategorije', 'Rings': 'Prstenje', 'Necklaces': 'Ogrlice',
@@ -17,8 +24,15 @@ function ProductCard({ product }) {
   const navigate = useNavigate()
   const [added, setDodano] = createSignal(false)
 
+  const isMemberOnly = product.membersOnly === true
+  const canAddToCart = !isMemberOnly || isAuthenticated()
+
   function handleAddToCart(e) {
     e.stopPropagation()
+    if (!canAddToCart) {
+      navigate('/login')
+      return
+    }
     addToCart(product)
     setDodano(true)
     setTimeout(() => setDodano(false), 1500)
@@ -31,6 +45,7 @@ function ProductCard({ product }) {
       <div class="relative overflow-hidden aspect-square bg-aurum-dark">
         <img src={product.images?.[0]} alt={product.name}
           class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        
         <div class="absolute inset-0 bg-gradient-to-t from-aurum-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
         <div class="absolute top-2 left-2 flex flex-col gap-1">
@@ -62,10 +77,11 @@ function ProductCard({ product }) {
           {product.name}
         </h3>
         <p class="text-aurum-muted text-xs mb-3">{product.description?.substring(0, 60)}...</p>
-        <div class="flex artikala-center justify-between">
+        
+        <div class="flex items-center justify-between">
           <div>
             {product.salePrice ? (
-              <div class="flex artikala-center gap-2">
+              <div class="flex items-center gap-2">
                 <span class="text-aurum-gold font-bold">${product.salePrice.toLocaleString()}</span>
                 <span class="text-aurum-muted text-xs line-through">${product.price?.toLocaleString()}</span>
               </div>
@@ -74,12 +90,20 @@ function ProductCard({ product }) {
             )}
             <p class="text-aurum-muted text-xs">Šifra: {product.sku}</p>
           </div>
+
           <button onclick={handleAddToCart}
             class={`text-xs px-3 py-2 rounded border transition-all ${
-              added() ? 'bg-green-600 border-green-600 text-white' :
-              'border-aurum-gold text-aurum-gold hover:bg-aurum-gold hover:text-aurum-black'
+              !canAddToCart 
+                ? 'border-aurum-border text-aurum-muted cursor-not-allowed opacity-70' 
+                : added() 
+                  ? 'bg-green-600 border-green-600 text-white' 
+                  : 'border-aurum-gold text-aurum-gold hover:bg-aurum-gold hover:text-aurum-black'
             }`}>
-            {added() ? '✓ Dodano' : 'U košaricu'}
+            {!canAddToCart 
+              ? '👑 Prijava' 
+              : added() 
+                ? '✓ Dodano' 
+                : 'U košaricu'}
           </button>
         </div>
       </div>
@@ -89,7 +113,7 @@ function ProductCard({ product }) {
 
 export default function Catalog() {
   const [searchParams] = useSearchParams()
-  const [category, setCategory] = createSignal('Sve')
+  const [category, setCategory] = createSignal('All')
   const [priceMin, setPriceMin] = createSignal(0)
   const [priceMax, setPriceMax] = createSignal(15000)
   const [membersOnly, setMembersOnly] = createSignal(false)
@@ -100,7 +124,7 @@ export default function Catalog() {
   onMount(() => fetchProducts())
 
   createEffect(() => {
-    setCategory('Sve'); setMembersOnly(false); setSearch(''); setSortBy('Istaknuto')
+    setCategory('All'); setMembersOnly(false); setSearch(''); setSortBy('Istaknuto')
     if (searchParams.search) setSearch(searchParams.search)
     if (searchParams.filter === 'exclusive') setMembersOnly(true)
     if (searchParams.filter === 'new') setSortBy('Najnovije')
@@ -124,8 +148,8 @@ export default function Catalog() {
         p.sku?.toLowerCase().includes(q)
       )
     }
-    if (category() !== 'Sve') artikala = artikala.filter(p => p.category === category())
-    if (membersOnly()) artikala = artikala.filter(p => p.membersOnly)
+if (category() !== 'All') artikala = artikala.filter(p => p.category === category())    
+  if (membersOnly()) artikala = artikala.filter(p => p.membersOnly)
     artikala = artikala.filter(p => { const price = p.salePrice || p.price; return price >= priceMin() && price <= priceMax() })
     if (sortBy() === 'Cijena: Niža') artikala = [...artikala].sort((a,b) => (a.salePrice||a.price) - (b.salePrice||b.price))
     if (sortBy() === 'Cijena: Viša') artikala = [...artikala].sort((a,b) => (b.salePrice||b.price) - (a.salePrice||a.price))
@@ -154,16 +178,6 @@ export default function Catalog() {
               Istraži kolekciju
             </button>
           </div>
-          <div class="hidden md:flex flex-col gap-3">
-            <div class="card-dark p-4">
-              <span class="text-aurum-gold text-xs font-bold">Brza ponuda</span>
-              <p class="text-aurum-text text-sm mt-1">24-satni pregled za članove</p>
-            </div>
-            <div class="card-dark p-4">
-              <span class="text-aurum-gold text-xs font-bold">Certifikat autentičnosti</span>
-              <p class="text-aurum-muted text-xs mt-1">Besplatno uz odabrane kupovine</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -177,12 +191,9 @@ export default function Catalog() {
               <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-2">Kategorija</h4>
               <select value={category()} onchange={e => setCategory(e.target.value)}
                 class="input-dark w-full px-3 py-2 text-sm">
-                <option value="Sve">Sve kategorije</option>
-                <option value="Rings">Prstenje</option>
-                <option value="Necklaces">Ogrlice</option>
-                <option value="Watches">Satovi</option>
-                <option value="Accessories">Dodaci</option>
-                <option value="Art Objects">Umjetnički predmeti</option>
+                <For each={CATEGORIES}>{cat => (
+                  <option value={cat}>{CATEGORIES_HR[cat] || cat}</option>
+                )}</For>
               </select>
             </div>
             <div>
@@ -202,22 +213,10 @@ export default function Catalog() {
                 <span class="text-xs text-aurum-text">Samo za članove</span>
               </label>
             </div>
-            <button onclick={() => { setCategory('Sve'); setPriceMin(0); setPriceMax(15000); setMembersOnly(false) }}
+            <button onclick={() => { setCategory('All'); setPriceMin(0); setPriceMax(15000); setMembersOnly(false) }}
               class="text-xs text-aurum-muted hover:text-aurum-gold transition-colors underline">
               Poništi filtere
             </button>
-            <div class="border-t border-aurum-border pt-4">
-              <h4 class="text-xs text-aurum-muted uppercase tracking-widest mb-3">Odabrani proizvodi</h4>
-              <For each={products().slice(0, 2)}>{p => (
-                <A href={`/product/${p.id}`} class="flex artikala-center gap-3 mb-3 hover:opacity-80 transition-opacity">
-                  <img src={p.images?.[0]} alt={p.name} class="w-10 h-10 rounded object-cover" />
-                  <div>
-                    <p class="text-xs text-aurum-text leading-tight">{p.name}</p>
-                    <p class="text-xs text-aurum-muted">Ekskluzivno</p>
-                  </div>
-                </A>
-              )}</For>
-            </div>
           </div>
         </aside>
 
@@ -241,16 +240,6 @@ export default function Catalog() {
                   <option>Cijena: Niža</option>
                   <option>Cijena: Viša</option>
                 </select>
-                <div class="flex border border-aurum-border rounded overflow-hidden">
-                  <button onclick={() => setView('grid')}
-                    class={`px-3 py-1.5 text-xs transition-colors ${view()==='grid' ? 'bg-aurum-gold text-aurum-black' : 'text-aurum-muted hover:text-aurum-gold'}`}>
-                    Mreža
-                  </button>
-                  <button onclick={() => setView('list')}
-                    class={`px-3 py-1.5 text-xs transition-colors ${view()==='list' ? 'bg-aurum-gold text-aurum-black' : 'text-aurum-muted hover:text-aurum-gold'}`}>
-                    Listaa
-                  </button>
-                </div>
               </div>
             </div>
 

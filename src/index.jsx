@@ -11,9 +11,6 @@ import ProfilePage       from './pages/ProfilePage.jsx'
 import AdminDashboard    from './pages/AdminDashboard.jsx'
 import AdminProductForm  from './pages/AdminProductForm.jsx'
 
-import { siteUnlocked } from './stores/index.js'
-import { createEffect } from 'solid-js'
-
 function App() {
   return (
     <Router>
@@ -23,7 +20,7 @@ function App() {
       <Route path="/login"                 component={LoginPage} />
       <Route path="/checkout"              component={CheckoutPage} />
       <Route path="/cart"                  component={CheckoutPage} />
-      <Route path="/profile"              component={ProfilePage} />
+      <Route path="/profile"               component={ProfilePage} />
       <Route path="/admin"                 component={AdminDashboard} />
       <Route path="/admin/products/new"    component={AdminProductForm} />
       <Route path="/admin/products/edit/:id" component={AdminProductForm} />

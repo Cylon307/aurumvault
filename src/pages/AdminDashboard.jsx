@@ -1,6 +1,6 @@
 import { createSignal, Show, For, onMount, onCleanup } from 'solid-js'
 import { A, useNavigate } from '@solidjs/router'
-import { isAdmin, currentUser, logout, orders, products, fetchOrders, fetchProducts } from '../stores/index.js'
+import { isAdmin, currentUser, logout, orders, products, fetchAllOrders, fetchProducts } from '../stores/index.js'
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { db } from '../firebase.js'
 
@@ -42,9 +42,9 @@ export default function AdminDashboard() {
 
   // ── Data ──────────────────────────────────────────────────
   onMount(() => {
-    fetchOrders()
-    fetchProducts()
-  })
+  fetchAllOrders() // ← umjesto fetchOrders()
+  fetchProducts()
+})
 
   const [customers, setCustomers] = createSignal([])
   const [customersLoading, setCustomersLoading] = createSignal(false)
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
 
   async function updateOrderStatus(orderId, status) {
     await updateDoc(doc(db, 'orders', orderId), { status })
-    await fetchOrders()
+    await fetchAllOrders()
   }
 
   async function updateUserRole(userId, role) {
@@ -78,11 +78,11 @@ export default function AdminDashboard() {
   }
 
   const navItems = [
-    { key: 'dashboard',  icon: '📊', label: 'Dashboard' },
-    { key: 'orders',     icon: '📦', label: 'Orders' },
-    { key: 'customers',  icon: '👥', label: 'Customers' },
-    { key: 'promotions', icon: '🏷',  label: 'Promotions' },
-    { key: 'settings',   icon: '⚙',  label: 'Settings' },
+    { key: 'dashboard',  icon: '📊', label: 'Nadzorna ploča' },
+    { key: 'orders',     icon: '📦', label: 'Narudžbe' },
+    { key: 'customers',  icon: '👥', label: 'Kupci' },
+    { key: 'promotions', icon: '🏷',  label: 'Promocije' },
+    { key: 'settings',   icon: '⚙',  label: 'Postavke' },
   ]
 
   const auditLog = [
